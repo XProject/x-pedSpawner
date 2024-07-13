@@ -91,8 +91,7 @@ local function make_member_def(class, name, params)
     }
 
     if params.method then
-        assert(type(params.method) == 'function' or (params.method == true and params.virtual),
-            "'method' attribute must be a function or it must be pure virtual (abstract)")
+        assert(type(params.method) == 'function' or (params.method == true and params.virtual), "'method' attribute must be a function or it must be pure virtual (abstract)")
         def.method = params.method
 
         if params.virtual then
@@ -101,8 +100,7 @@ local function make_member_def(class, name, params)
             if params.method == true then
                 -- Pure virtual (abstract)
                 def.method = function(_ --[[this]])
-                    error(string.format("Pure virtual method '%s' of class '%s' not implemented by any derived class",
-                        name, class.name))
+                    error(string.format("Pure virtual method '%s' of class '%s' not implemented by any derived class", name, class.name))
                 end
             elseif params.final then
                 def.final = true
@@ -125,8 +123,7 @@ end
 local function check_member_access(view, member_name, scope, write_mode)
     local class = view.class
 
-    local state_member = view.members[member_name] or
-        error("Member '" .. tostring(member_name) .. "' not defined in class: " .. class.name)
+    local state_member = view.members[member_name] or error("Member '" .. tostring(member_name) .. "' not defined in class: " .. class.name)
     local member_def = state_member.def
 
     local access_level
@@ -141,8 +138,7 @@ local function check_member_access(view, member_name, scope, write_mode)
     end
 
     if access_level < expected_access_level then
-        error(string.format("Attempting to access a %s member ('%s' in class '%s')",
-            (expected_access_level == PROTECTED) and 'protected' or 'private', member_def.name, class.name))
+        error(string.format("Attempting to access a %s member ('%s' in class '%s')", (expected_access_level == PROTECTED) and 'protected' or 'private', member_def.name, class.name))
     end
 
     if write_mode and (member_def.read_only or member_def.method) then
@@ -395,8 +391,7 @@ local function override_view_member(view_members, member_name, new_member)
             if def.virtual then
                 -- Virtual method
                 if def.final then
-                    error(string.format("cannot override final virtual method '%s' of class '%s'", member_name,
-                        def.class.name))
+                    error(string.format("cannot override final virtual method '%s' of class '%s'", member_name, def.class.name))
                 end
 
                 -- Virtual override				
