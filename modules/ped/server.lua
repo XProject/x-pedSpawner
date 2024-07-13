@@ -19,10 +19,10 @@
 ---@field getBucket fun(this: CPed)
 ---@field setBucket fun(this: CPed, newBucket: number)
 
-local class = lib.load("modules.class.shared") --[[@as class]]
+local class   = lib.require("modules.class.shared") --[[@as class]]
 local utility = lib.require("modules.utility.server") --[[@as svUtility]]
 
-local Ped = class("Ped", nil, {
+local Ped     = class("Ped", nil, {
     members = {
         --[[ private attributes ]]
         key       = { private = true, value = false },
@@ -184,7 +184,7 @@ local Ped = class("Ped", nil, {
             end
         },
     },
-    ctor = function(this, _ --[[parent_ctor]], model, coords, radius, bucket)
+    ctor    = function(this, _ --[[parent_ctor]], model, coords, radius, bucket)
         this.key    = utility.randomString(5)
         this.model  = model
         this.coords = coords
