@@ -411,250 +411,256 @@ local function override_view_member(view_members, member_name, new_member)
     view_members[member_name] = new_member
 end
 
--- Create an instance of a class
-function _G.new(__class, ...)
-    assert(getmetatable(__class) == CLASS_HANDLE_TAG, "Argument 1 must be a class")
+---@class class
+local CLASS = setmetatable({
+    ---Create an instance of a class
+    new = function(__class, ...)
+        assert(getmetatable(__class) == CLASS_HANDLE_TAG, "Argument 1 must be a class")
 
-    -- The __class argument is a wrapper (handle) of the actual class
-    local class = __class[CLASS_INNER_KEY]
+        -- The __class argument is a wrapper (handle) of the actual class
+        local class = __class[CLASS_INNER_KEY]
 
-    -- Fetch class hierarchy
-    local hierarchy = class[CLASS_HIERARCHY_KEY]
+        -- Fetch class hierarchy
+        local hierarchy = class[CLASS_HIERARCHY_KEY]
 
-    local instance_state = make_state(class)
+        local instance_state = make_state(class)
 
-    -- Set metatable for capturing garbage collection action and call destructors
-    setmetatable(instance_state, {
-        __gc = function(_ --[[t]])
-            for i = #hierarchy, 1, -1 do
-                hierarchy[i][CLASS_UNINIT_KEY](instance_state)
-            end
-        end,
-        __metatable = false --Lock metatable
-    })
-
-    -- Init		
-    for _, hierarchy_class in ipairs(hierarchy) do
-        hierarchy_class[CLASS_INIT_KEY](instance_state)
-    end
-
-    -- Call constructor
-    local this = make_state_handle(instance_state, class)
-    class[CLASS_CTOR_KEY](this, ...)
-
-    return make_state_handle(instance_state, class, GLOBAL_SCOPE)
-end
-
--- Cast an instance to a given class, if possible.
-function _G.cast(instance, __class)
-    assert(getmetatable(instance) == STATE_HANDLE_TAG, "First argument must be an instance")
-    assert(getmetatable(__class) == CLASS_HANDLE_TAG, "Second argument must be a class")
-    return cast_state_handle(instance, __class[CLASS_INNER_KEY])
-end
-
--- Check if the given argument is an instance of a class.
--- @param instance Object to test
--- @param __class If not nil, test if the instance is of the given class.
--- @param strict If true, class test is done in a strict manner.
-function _G.is_object(instance, __class, strict)
-    if getmetatable(instance) == STATE_HANDLE_TAG then
-        if __class then
-            assert(getmetatable(__class) == CLASS_HANDLE_TAG, "Class argument must be a class")
-
-            if strict then
-                return instance.__class == __class
-            end
-
-            return state_is_a(instance[HANDLE_STATE_KEY], __class[CLASS_INNER_KEY])
-        end
-        return true
-    end
-    return false
-end
-
--- Check if the given argument is a class
-function _G.is_class(__class)
-    return getmetatable(__class) == CLASS_HANDLE_TAG
-end
-
--- Access an instance as a friend
-function _G.friend(instance, key)
-    assert(getmetatable(instance) == STATE_HANDLE_TAG, "First argument must be an instance")
-    local state = instance[HANDLE_STATE_KEY]
-    local class = state[STATE_CLASS_KEY]
-
-    if class[CLASS_FRIENDS_KEY][key] then
-        return make_state_handle(state, class)
-    end
-
-    error("Not a friend of class " .. class.name)
-end
-
--- Create a class
-function _G.class(class_name, __parent, class_attrs)
-    -- The __parent argument is a wrapper (handle) of the actual parent class
-    local parent
-    if __parent then
-        assert(getmetatable(__parent) == CLASS_HANDLE_TAG, "Parent argument must be a class")
-        parent = __parent[CLASS_INNER_KEY]
-    end
-
-
-    -- Default class attributes
-    class_attrs = class_attrs or {
-        final = false
-    }
-
-    -- Setup friends
-    local friends = {}
-    if class_attrs.friends then
-        if type(class_attrs.friends) == 'table' then
-            for _, friend in ipairs(class_attrs.friends) do
-                friends[friend] = true
-            end
-        else
-            error("Invalid friends attribute")
-        end
-    end
-
-    -- Handle to this class. It is a wrapper of the class, and at the end of the class
-    -- initialization is protected with a metatable.
-    local this_class_handle         = {}
-
-    -- Basic initialization	
-    local this_class                = {
-        name                          = class_name,
-        parent                        = parent,
-
-        -- Private fields					
-        [CLASS_MEMBERS_KEY]           = {},
-        [CLASS_QUALIFIED_MEMBERS_KEY] = {},      -- A collection of names of qualified members (keys are ancestor class names and values are the corresponding class)
-        [CLASS_PROTECTED_SCOPES_KEY]  = {},      -- Allowed scopes for accessing to protected members. Keys are class scopes, values are just "true"
-        [CLASS_FRIENDS_KEY]           = friends, -- Hash of friends. Keys are friend secret keys, and values are "true"  (See function friend())
-        [CLASS_ANCESTORS_KEY]         = {}       -- Hash of ancestors. Keys are ancestor classes and values are "true"
-    }
-
-    -- Scope
-    this_class[CLASS_SCOPE_KEY]     = make_scope(this_class)
-
-    -- Reflection
-    this_class[CLASS_INNER_KEY]     = this_class
-    this_class[CLASS_HANDLE_KEY]    = this_class_handle
-
-    -- Init hierarchy
-    this_class[CLASS_HIERARCHY_KEY] = { this_class }
-
-    -- Fetch members	
-    local members                   = this_class[CLASS_MEMBERS_KEY]
-
-    this_class[CLASS_INIT_KEY]      = function(state)
-        -- My view of the state
-        local view = make_state_view(state, this_class)
-        local view_members = view.members
-
-        -- Inherit parent view
-        if parent then
-            local parent_view = state.views[parent]
-            for name, state_member in pairs(parent_view.members) do
-                view_members[name] = state_member
-            end
-        end
-
-        -- Override with own members
-        for name, member_def in pairs(members) do
-            override_view_member(view_members, name, make_state_member(member_def))
-        end
-    end
-
-    this_class[CLASS_CTOR_KEY]      = function(this, ...)
-        local ctor = class_attrs.ctor
-        -- local state = this[HANDLE_STATE_KEY]
-
-        local parent_ctor_called_by_user = false
-
-        if ctor then
-            -- User constructor is defined
-            -- Create a function that can be called from the user's constructor to explicitly invoke the parent's constructor
-            local call_parent_ctor = function(...)
-                if parent then
-                    parent[CLASS_CTOR_KEY](this, ...)
+        -- Set metatable for capturing garbage collection action and call destructors
+        setmetatable(instance_state, {
+            __gc = function(_ --[[t]])
+                for i = #hierarchy, 1, -1 do
+                    hierarchy[i][CLASS_UNINIT_KEY](instance_state)
                 end
-                parent_ctor_called_by_user = true
+            end,
+            __metatable = false --Lock metatable
+        })
+
+        -- Init		
+        for _, hierarchy_class in ipairs(hierarchy) do
+            hierarchy_class[CLASS_INIT_KEY](instance_state)
+        end
+
+        -- Call constructor
+        local this = make_state_handle(instance_state, class)
+        class[CLASS_CTOR_KEY](this, ...)
+
+        return make_state_handle(instance_state, class, GLOBAL_SCOPE)
+    end,
+
+    ---Cast an instance to a given class, if possible.
+    cast = function(instance, __class)
+        assert(getmetatable(instance) == STATE_HANDLE_TAG, "First argument must be an instance")
+        assert(getmetatable(__class) == CLASS_HANDLE_TAG, "Second argument must be a class")
+        return cast_state_handle(instance, __class[CLASS_INNER_KEY])
+    end,
+
+    ---Check if the given argument is an instance of a class.
+    ---@param instance any instance Object to test
+    ---@param __class any __class If not nil, test if the instance is of the given class.
+    ---@param strict any strict If true, class test is done in a strict manner.
+    ---@return boolean
+    is_object = function(instance, __class, strict)
+        if getmetatable(instance) == STATE_HANDLE_TAG then
+            if __class then
+                assert(getmetatable(__class) == CLASS_HANDLE_TAG, "Class argument must be a class")
+
+                if strict then
+                    return instance.__class == __class
+                end
+
+                return state_is_a(instance[HANDLE_STATE_KEY], __class[CLASS_INNER_KEY])
+            end
+            return true
+        end
+        return false
+    end,
+
+    ---Check if the given argument is a class
+    is_class = function(__class)
+        return getmetatable(__class) == CLASS_HANDLE_TAG
+    end,
+
+    ---Access an instance as a friend
+    friend = function(instance, key)
+        assert(getmetatable(instance) == STATE_HANDLE_TAG, "First argument must be an instance")
+        local state = instance[HANDLE_STATE_KEY]
+        local class = state[STATE_CLASS_KEY]
+
+        if class[CLASS_FRIENDS_KEY][key] then
+            return make_state_handle(state, class)
+        end
+
+        error("Not a friend of class " .. class.name)
+    end
+}, {
+    ---Create a class
+    __call = function(_, class_name, __parent, class_attrs)
+        -- The __parent argument is a wrapper (handle) of the actual parent class
+        local parent
+        if __parent then
+            assert(getmetatable(__parent) == CLASS_HANDLE_TAG, "Parent argument must be a class")
+            parent = __parent[CLASS_INNER_KEY]
+        end
+
+
+        -- Default class attributes
+        class_attrs = class_attrs or {
+            final = false
+        }
+
+        -- Setup friends
+        local friends = {}
+        if class_attrs.friends then
+            if type(class_attrs.friends) == 'table' then
+                for _, friend in ipairs(class_attrs.friends) do
+                    friends[friend] = true
+                end
+            else
+                error("Invalid friends attribute")
+            end
+        end
+
+        -- Handle to this class. It is a wrapper of the class, and at the end of the class
+        -- initialization is protected with a metatable.
+        local this_class_handle         = {}
+
+        -- Basic initialization	
+        local this_class                = {
+            name                          = class_name,
+            parent                        = parent,
+
+            -- Private fields					
+            [CLASS_MEMBERS_KEY]           = {},
+            [CLASS_QUALIFIED_MEMBERS_KEY] = {},      -- A collection of names of qualified members (keys are ancestor class names and values are the corresponding class)
+            [CLASS_PROTECTED_SCOPES_KEY]  = {},      -- Allowed scopes for accessing to protected members. Keys are class scopes, values are just "true"
+            [CLASS_FRIENDS_KEY]           = friends, -- Hash of friends. Keys are friend secret keys, and values are "true"  (See function friend())
+            [CLASS_ANCESTORS_KEY]         = {}       -- Hash of ancestors. Keys are ancestor classes and values are "true"
+        }
+
+        -- Scope
+        this_class[CLASS_SCOPE_KEY]     = make_scope(this_class)
+
+        -- Reflection
+        this_class[CLASS_INNER_KEY]     = this_class
+        this_class[CLASS_HANDLE_KEY]    = this_class_handle
+
+        -- Init hierarchy
+        this_class[CLASS_HIERARCHY_KEY] = { this_class }
+
+        -- Fetch members	
+        local members                   = this_class[CLASS_MEMBERS_KEY]
+
+        this_class[CLASS_INIT_KEY]      = function(state)
+            -- My view of the state
+            local view = make_state_view(state, this_class)
+            local view_members = view.members
+
+            -- Inherit parent view
+            if parent then
+                local parent_view = state.views[parent]
+                for name, state_member in pairs(parent_view.members) do
+                    view_members[name] = state_member
+                end
             end
 
-            -- Invoke constructor
-            local ctor_caller = make_method_caller(this_class, ctor)
-            ctor_caller(this, call_parent_ctor, ...)
+            -- Override with own members
+            for name, member_def in pairs(members) do
+                override_view_member(view_members, name, make_state_member(member_def))
+            end
         end
 
+        this_class[CLASS_CTOR_KEY]      = function(this, ...)
+            local ctor = class_attrs.ctor
+            -- local state = this[HANDLE_STATE_KEY]
 
-        -- Call parent's constructor unless the user called it.
-        if parent and not parent_ctor_called_by_user then
-            parent[CLASS_CTOR_KEY](this, ...)
+            local parent_ctor_called_by_user = false
+
+            if ctor then
+                -- User constructor is defined
+                -- Create a function that can be called from the user's constructor to explicitly invoke the parent's constructor
+                local call_parent_ctor = function(...)
+                    if parent then
+                        parent[CLASS_CTOR_KEY](this, ...)
+                    end
+                    parent_ctor_called_by_user = true
+                end
+
+                -- Invoke constructor
+                local ctor_caller = make_method_caller(this_class, ctor)
+                ctor_caller(this, call_parent_ctor, ...)
+            end
+
+
+            -- Call parent's constructor unless the user called it.
+            if parent and not parent_ctor_called_by_user then
+                parent[CLASS_CTOR_KEY](this, ...)
+            end
         end
-    end
 
-    this_class[CLASS_UNINIT_KEY]    = function(state)
-        local dtor = class_attrs.dtor
+        this_class[CLASS_UNINIT_KEY]    = function(state)
+            local dtor = class_attrs.dtor
 
-        if dtor then
-            local this = make_state_handle(state, this_class)
-            dtor(this)
+            if dtor then
+                local this = make_state_handle(state, this_class)
+                dtor(this)
+            end
         end
-    end
 
-    this_class[CLASS_DERIVE_KEY]    = function(child_class)
-        assert(not class_attrs.final, "cannot derive from the final class: " .. class_name)
+        this_class[CLASS_DERIVE_KEY]    = function(child_class)
+            assert(not class_attrs.final, "cannot derive from the final class: " .. class_name)
 
-        local child_class_scope = child_class[CLASS_SCOPE_KEY]
-        local child_hierarchy = child_class[CLASS_HIERARCHY_KEY]
-        local child_ancestors = child_class[CLASS_ANCESTORS_KEY]
-        local child_qualified_members = child_class[CLASS_QUALIFIED_MEMBERS_KEY]
+            local child_class_scope = child_class[CLASS_SCOPE_KEY]
+            local child_hierarchy = child_class[CLASS_HIERARCHY_KEY]
+            local child_ancestors = child_class[CLASS_ANCESTORS_KEY]
+            local child_qualified_members = child_class[CLASS_QUALIFIED_MEMBERS_KEY]
 
-        this_class[CLASS_PROTECTED_SCOPES_KEY][child_class_scope] = true
+            this_class[CLASS_PROTECTED_SCOPES_KEY][child_class_scope] = true
 
-        table.insert(child_hierarchy, 1, this_class)
+            table.insert(child_hierarchy, 1, this_class)
 
-        child_ancestors[this_class] = true
+            child_ancestors[this_class] = true
 
-        child_qualified_members[class_name] = this_class
+            child_qualified_members[class_name] = this_class
 
 
+            if parent then
+                parent[CLASS_DERIVE_KEY](child_class)
+            end
+        end
+
+        local check_its_me              = function(self)
+            assert(self == this_class, "First argument must be the class: " .. class_name)
+        end
+
+        this_class.define_member        = function(self, name, params)
+            check_its_me(self)
+            if members[name] then
+                error(string.format("Member '%s' already defined in class '%s'", name, class_name))
+            end
+            members[name] = make_member_def(this_class, name, params)
+        end
+
+        -- Inherit from parent class, if any.
         if parent then
-            parent[CLASS_DERIVE_KEY](child_class)
+            parent[CLASS_DERIVE_KEY](this_class)
         end
-    end
 
-    local check_its_me              = function(self)
-        assert(self == this_class, "First argument must be the class: " .. class_name)
-    end
-
-    this_class.define_member        = function(self, name, params)
-        check_its_me(self)
-        if members[name] then
-            error(string.format("Member '%s' already defined in class '%s'", name, class_name))
+        -- Create initial members
+        if type(class_attrs.members) == 'table' then
+            for name, params in pairs(class_attrs.members) do
+                this_class:define_member(name, params)
+            end
         end
-        members[name] = make_member_def(this_class, name, params)
-    end
 
-    -- Inherit from parent class, if any.
-    if parent then
-        parent[CLASS_DERIVE_KEY](this_class)
+        -- Protect and return the handle for the class
+        return setmetatable(this_class_handle, {
+            __index = this_class,
+            __newindex = function(_ --[[t]], _ --[[k]], _ --[[v]])
+                error("Cannot change class properties")
+            end,
+            __metatable = CLASS_HANDLE_TAG -- Lock metatable
+        })
     end
+})
 
-    -- Create initial members
-    if type(class_attrs.members) == 'table' then
-        for name, params in pairs(class_attrs.members) do
-            this_class:define_member(name, params)
-        end
-    end
-
-    -- Protect and return the handle for the class
-    return setmetatable(this_class_handle, {
-        __index = this_class,
-        __newindex = function(_ --[[t]], _ --[[k]], _ --[[v]])
-            error("Cannot change class properties")
-        end,
-        __metatable = CLASS_HANDLE_TAG -- Lock metatable
-    })
-end
+return CLASS
