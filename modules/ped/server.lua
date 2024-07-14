@@ -1,26 +1,31 @@
 ---@class CPed
----@field private key          string
----@field private model        number
----@field private coords       vector4
----@field private radius       number
----@field private entityId     number
----@field private networkId    number
----@field private bucket       number
----@field public  getKey       fun(this: CPed): key: string
----@field public  getModel     fun(this: CPed): model: string
----@field public  getCoords    fun(this: CPed): coords: vector4
----@field public  setCoords    fun(this: CPed, newCoords: vector4)
----@field public  getRadius    fun(this: CPed): radius: number
----@field public  setRadius    fun(this: CPed, newRadius: number)
----@field public  getEntityId  fun(this: CPed): entityId: number
----@field public  setEntityId  fun(this: CPed, newEntityId: number)
----@field public  getNetworkId fun(this: CPed): networkId: number
----@field public  setNetworkId fun(this: CPed, newNetworkId: number)
----@field public  getBucket    fun(this: CPed): bucket: number
----@field public  setBucket    fun(this: CPed, newBucket: number)
+---@field private key                 string
+---@field private model               number
+---@field private coords              vector4
+---@field private radius              number
+---@field private entityId            number
+---@field private networkId           number
+---@field private bucket              number
+---@field private loadState           boolean | string
+---@field public  getKey              fun(this: CPed): key: string
+---@field public  getModel            fun(this: CPed): model: string
+---@field public  getCoords           fun(this: CPed): coords: vector4
+---@field public  setCoords           fun(this: CPed, newCoords: vector4)
+---@field public  getRadius           fun(this: CPed): radius: number
+---@field public  setRadius           fun(this: CPed, newRadius: number)
+---@field public  getEntityId         fun(this: CPed): entityId: number
+---@field public  setEntityId         fun(this: CPed, newEntityId: number)
+---@field public  getNetworkId        fun(this: CPed): networkId: number
+---@field public  getBucket           fun(this: CPed): bucket: number
+---@field public  setBucket           fun(this: CPed, newBucket: number)
+---@field public  getLoadState        fun(this: CPed): loadState: boolean | string
+---@field public  setLoadState        fun(this: CPed, newLoadState: boolean | string)
+---@field public  getDistanceToCoords fun(this: CPed, coordsToCheck: vector3): number
+---@field public  getDistanceToPlayer fun(this: CPed, playerId: number): number
+---@field public  isPlayerNearby      fun(this: CPed, playerId: number): boolean
 
 local class   = lib.require("modules.class") --[[@as class]]
-local utility = lib.require("modules.utility") --[[@as utility]]
+local utility = lib.require("modules.utility") --[[@as svUtility]]
 
 local Ped
 ---@class Ped: CPed
@@ -34,30 +39,31 @@ Ped           = class("Ped", nil, {
         entityId  = { private = true, value = false },
         networkId = { private = true, value = false },
         bucket    = { private = true, value = false },
+        loadState = { private = true, value = false },
 
         --[[ getters and setters ]]
 
         -- key
-        getKey       = {
+        getKey              = {
             method = function(this)
                 return this.key
             end
         },
 
         -- model
-        getModel     = {
+        getModel            = {
             method = function(this)
                 return this.model
             end
         },
 
         -- coords
-        getCoords    = {
+        getCoords           = {
             method = function(this)
                 return this.coords
             end
         },
-        setCoords    = {
+        setCoords           = {
             method = function(this, newCoords)
                 local _type = type(newCoords)
 
@@ -70,12 +76,12 @@ Ped           = class("Ped", nil, {
         },
 
         -- radius
-        getRadius    = {
+        getRadius           = {
             method = function(this)
                 return this.radius
             end
         },
-        setRadius    = {
+        setRadius           = {
             method = function(this, newRadius)
                 local _type = type(newRadius)
 
@@ -94,12 +100,12 @@ Ped           = class("Ped", nil, {
         },
 
         -- entityId
-        getEntityId  = {
+        getEntityId         = {
             method = function(this)
                 return this.entityId
             end
         },
-        setEntityId  = {
+        setEntityId         = {
             method = function(this, newEntityId)
                 local _type = type(newEntityId)
 
@@ -124,42 +130,19 @@ Ped           = class("Ped", nil, {
         },
 
         -- networkId
-        getNetworkId = {
+        getNetworkId        = {
             method = function(this)
                 return this.networkId
             end
         },
-        setNetworkId = {
-            method = function(this, newNetworkId)
-                local _type = type(newNetworkId)
-
-                if _type ~= "number" then
-                    return error(("newNetworkId must be of type number, received %s"):format(_type))
-                end
-
-                local newEntityId
-
-                if newNetworkId <= 0 then -- means the entity is removed
-                    newEntityId = false
-                    newNetworkId = false
-                elseif not DoesEntityExist(NetworkGetEntityFromNetworkId(newNetworkId)) then
-                    return error(("newNetworkId is not an existing networkId on the server, received %s"):format(newNetworkId))
-                else
-                    newEntityId = NetworkGetEntityFromNetworkId(newNetworkId)
-                end
-
-                this.entityId = newEntityId
-                this.networkId = newNetworkId
-            end
-        },
 
         -- bucket
-        getBucket    = {
+        getBucket           = {
             method = function(this)
                 return this.entityId and GetEntityRoutingBucket(this.entityId) or this.bucket
             end
         },
-        setBucket    = {
+        setBucket           = {
             method = function(this, newBucket)
                 local _type = type(newBucket)
 
@@ -174,6 +157,37 @@ Ped           = class("Ped", nil, {
                 end
 
                 this.bucket = newBucket
+            end
+        },
+
+        -- loadState
+        getLoadState        = {
+            method = function(this)
+                return this.loadState
+            end
+        },
+
+        setLoadState        = {
+            method = function(this, newLoadState)
+                this.loadState = newLoadState
+            end
+        },
+
+        getDistanceToCoords = {
+            method = function(this, coordsToCheck)
+                return #(vector3(coordsToCheck.x, coordsToCheck.y, coordsToCheck.z) - vector3(this.coords.x, this.coords.y, this.coords.z))
+            end
+        },
+
+        getDistanceToPlayer = {
+            method = function(this, playerId)
+                return this:getDistanceToCoords(GetEntityCoords(GetPlayerPed(playerId)))
+            end
+        },
+
+        isPlayerNearby      = {
+            method = function(this, playerId)
+                return this:getDistanceToPlayer(playerId) <= this.radius
             end
         },
 
