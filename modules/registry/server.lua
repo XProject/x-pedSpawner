@@ -1,13 +1,20 @@
 ---@class CRegistry
 ---@field private storage any[]
+---@field private storageCount number
+---@field getCount fun(this: CRegistry): storageCount: number
+---@field getAll fun(this: CRegistry): storage: any[]
+---@field getElementByIndex fun(this: CRegistry, index: number): any?
+---@field getIndexByElement fun(this: CRegistry, attribute: any, attributeValue: any): number?
+---@field addElement fun(this: CRegistry, element: any)
+---@field removeElementByIndex fun(this: CRegistry, index: number)
 
-local safeCall = pcall
 local class    = lib.require("modules.class.shared") --[[@as class]]
 
+---@class Registry: CRegistry
 local Registry = class("Registry", nil, {
     members = {
         --[[ private attributes ]]
-        storage = { private = true, value = {} },
+        storage      = { private = true, value = {} },
         storageCount = { private = true, value = 0 },
 
         --[[ getters and setters ]]
@@ -24,39 +31,53 @@ local Registry = class("Registry", nil, {
             end
         },
 
-        getByIndex = {
+        getElementByIndex = {
             method = function(this, index)
                 return this.storage[index]
             end
         },
 
-        getIndexByAttribute = { -- needs extensive testing
-            method = function(this, attribute, attributeValue)
-                for i = 1, storageCount do
-                    local element = this.storage[i]
-                    local response = safeCall(element:attribute()) or safeCall(element[attribute]) or rawget(element[attribute])
+        getIndexByElement = {
+            method = function(this, element)
+                for i = 1, this.storageCount do
+                    local _element = this.storage[i]
 
-                    if response and response == attributeValue then return i end
+                    if _element == element then
+                        return i
+                    end
                 end
             end
         },
 
         --[[ other methods ]]
 
-        add = {
+        addElement = {
             method = function(this, element)
-                storageCount += 1
-                this.storage[storageCount] = element
+                this.storageCount += 1
+                this.storage[this.storageCount] = element
             end
         },
 
-        removeByIndex = {
-            method = function(this, index)
-                if not this:getByIndex(index) then
-                    return error(("removeByIndex received %s which does not exist as an index"):format(index))
+        removeElement = {
+            method = function(this, element)
+                local index = this:getIndexByElement(element)
+
+                if not index then
+                    return error(("removeElement received an element (%s) which does not exist in the registry storage"):format(element))
                 end
 
-                storageCount -= 1
+                this.storageCount -= 1
+                table.remove(this.storage, index)
+            end
+        },
+
+        removeElementByIndex = {
+            method = function(this, index)
+                if not this:getByIndex(index) then
+                    return error(("removeElementByIndex received %s which does not exist as an index in registry storage"):format(index))
+                end
+
+                this.storageCount -= 1
                 table.remove(this.storage, index)
             end
         },
