@@ -6,6 +6,8 @@
 ---@field getElementByIndex fun(this: CRegistry, index: number): any?
 ---@field getIndexByElement fun(this: CRegistry, attribute: any, attributeValue: any): number?
 ---@field addElement fun(this: CRegistry, element: any)
+---@field removeElement fun(this: CRegistry, element: any)
+---@field addElementByIndex fun(this: CRegistry, element: any, index: number)
 ---@field removeElementByIndex fun(this: CRegistry, index: number)
 
 local class    = lib.require("modules.class.shared") --[[@as class]]
@@ -14,6 +16,7 @@ local class    = lib.require("modules.class.shared") --[[@as class]]
 local Registry = class("Registry", nil, {
     members = {
         --[[ private attributes ]]
+
         storage      = { private = true, value = {} },
         storageCount = { private = true, value = 0 },
 
@@ -71,6 +74,13 @@ local Registry = class("Registry", nil, {
             end
         },
 
+        addElementByIndex = {
+            method = function(this, element, index)
+                this.storageCount += 1
+                table.insert(this.storage, index, element)
+            end
+        },
+
         removeElementByIndex = {
             method = function(this, index)
                 if not this:getByIndex(index) then
@@ -81,13 +91,6 @@ local Registry = class("Registry", nil, {
                 table.remove(this.storage, index)
             end
         },
-
-        -- overloads tostring
-        -- __tostring = {
-        --     method = function(this)
-        --         return string.format()
-        --     end
-        -- },
     },
 })
 
