@@ -1,31 +1,30 @@
 ---@class CPed
----@field private key       string
----@field private model     number
----@field private coords    vector4
----@field private radius    number
----@field private entityId  number
----@field private networkId number
----@field private bucket    number
----@field getKey fun(this: CPed): key: string
----@field getModel fun(this: CPed): model: string
----@field getCoords fun(this: CPed): coords: vector4
----@field setCoords fun(this: CPed, newCoords: vector4)
----@field getRadius fun(this: CPed): radius: number
----@field setRadius fun(this: CPed, newRadius: number)
----@field getEntityId fun(this: CPed): entityId: number
----@field setEntityId fun(this: CPed, newEntityId: number)
----@field getNetworkId fun(this: CPed): networkId: number
----@field setNetworkId fun(this: CPed, newNetworkId: number)
----@field getBucket fun(this: CPed): bucket: number
----@field setBucket fun(this: CPed, newBucket: number)
+---@field private key          string
+---@field private model        number
+---@field private coords       vector4
+---@field private radius       number
+---@field private entityId     number
+---@field private networkId    number
+---@field private bucket       number
+---@field public  getKey       fun(this: CPed): key: string
+---@field public  getModel     fun(this: CPed): model: string
+---@field public  getCoords    fun(this: CPed): coords: vector4
+---@field public  setCoords    fun(this: CPed, newCoords: vector4)
+---@field public  getRadius    fun(this: CPed): radius: number
+---@field public  setRadius    fun(this: CPed, newRadius: number)
+---@field public  getEntityId  fun(this: CPed): entityId: number
+---@field public  setEntityId  fun(this: CPed, newEntityId: number)
+---@field public  getNetworkId fun(this: CPed): networkId: number
+---@field public  setNetworkId fun(this: CPed, newNetworkId: number)
+---@field public  getBucket    fun(this: CPed): bucket: number
+---@field public  setBucket    fun(this: CPed, newBucket: number)
 
-local class    = lib.require("modules.class.shared") --[[@as class]]
-local utility  = lib.require("modules.utility.server") --[[@as svUtility]]
-local registry = class.new(lib.require("modules.registry.server")) --[[@as Registry]]
+local class   = lib.require("modules.class.shared") --[[@as class]]
+local utility = lib.require("modules.utility.server") --[[@as svUtility]]
 
 local Ped
 ---@class Ped: CPed
-Ped            = class("Ped", nil, {
+Ped           = class("Ped", nil, {
     members = {
         --[[ private attributes ]]
         key       = { private = true, value = false },
@@ -200,27 +199,7 @@ Ped            = class("Ped", nil, {
         this.coords = coords
         this.radius = radius
         this.bucket = bucket or 1 -- defaults to bucket 1
-
-        registry:addElement(this)
-    end,
-    -- dtor    = function(this)
-    --     print(string.format("A %s called %s is dead", this.__class.name:lower(), this.key))
-    -- end
+    end
 })
 
---[[
----@class Ped
-local ped = class.new(Ped, 123456789, vector4(0), 10.0)
-
-ped:setBucket(166)
-ped:setCoords(vector4(10))
-
-print(ped)
-
----@class Ped
-local ped2 = class.new(Ped, 987654321, vector4(0), 10.0)
-
-print(ped2)
-
-print(registry:getCount(), registry:getIndexByElement(3), registry:getElementByIndex(1) == ped)
-]]
+return Ped
