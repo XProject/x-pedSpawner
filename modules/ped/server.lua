@@ -6,23 +6,26 @@
 ---@field private entityId  number
 ---@field private networkId number
 ---@field private bucket    number
----@field getKey fun(this: CPed)
----@field getModel fun(this: CPed)
----@field getCoords fun(this: CPed)
+---@field getKey fun(this: CPed): key: string
+---@field getModel fun(this: CPed): model: string
+---@field getCoords fun(this: CPed): coords: vector4
 ---@field setCoords fun(this: CPed, newCoords: vector4)
----@field getRadius fun(this: CPed)
+---@field getRadius fun(this: CPed): radius: number
 ---@field setRadius fun(this: CPed, newRadius: number)
----@field getEntityId fun(this: CPed)
+---@field getEntityId fun(this: CPed): entityId: number
 ---@field setEntityId fun(this: CPed, newEntityId: number)
----@field getNetworkId fun(this: CPed)
+---@field getNetworkId fun(this: CPed): networkId: number
 ---@field setNetworkId fun(this: CPed, newNetworkId: number)
----@field getBucket fun(this: CPed)
+---@field getBucket fun(this: CPed): bucket: number
 ---@field setBucket fun(this: CPed, newBucket: number)
 
-local class   = lib.require("modules.class.shared") --[[@as class]]
-local utility = lib.require("modules.utility.server") --[[@as svUtility]]
+local class    = lib.require("modules.class.shared") --[[@as class]]
+local utility  = lib.require("modules.utility.server") --[[@as svUtility]]
+local registry = class.new(lib.require("modules.registry.server")) --[[@as Registry]]
 
-local Ped     = class("Ped", nil, {
+local Ped
+---@class Ped: CPed
+Ped            = class("Ped", nil, {
     members = {
         --[[ private attributes ]]
         key       = { private = true, value = false },
@@ -177,12 +180,19 @@ local Ped     = class("Ped", nil, {
 
         --[[ other methods ]]
 
-        -- overloads tostring
+        -- overrides tostring
         __tostring = {
             method = function(this)
                 return string.format("[PED] Key: %s, Model: %s, Coords: %s, Radius: %s, EntityId: %s, NetworkId: %s, Bucket: %s", this.key, this.model, this.coords, this.radius, this.entityId, this.networkId, this.bucket)
             end
         },
+
+        -- overrides equal
+        __eq = {
+            method = function(this, that)
+                return that:__is_a(Ped) and this:getKey() == that:getKey()
+            end
+        }
     },
     ctor    = function(this, _ --[[parent_ctor]], model, coords, radius, bucket)
         this.key    = utility.randomString(5)
@@ -190,24 +200,27 @@ local Ped     = class("Ped", nil, {
         this.coords = coords
         this.radius = radius
         this.bucket = bucket or 1 -- defaults to bucket 1
-    end
+
+        registry:addElement(this)
+    end,
+    -- dtor    = function(this)
+    --     print(string.format("A %s called %s is dead", this.__class.name:lower(), this.key))
+    -- end
 })
 
-
----@class CPed
+--[[
+---@class Ped
 local ped = class.new(Ped, 123456789, vector4(0), 10.0)
 
-print(ped:getModel())
-print(ped:getCoords())
-
+ped:setBucket(166)
 ped:setCoords(vector4(10))
 
 print(ped)
 
-ped:setBucket(166)
-
-print(ped)
-
+---@class Ped
 local ped2 = class.new(Ped, 987654321, vector4(0), 10.0)
 
 print(ped2)
+
+print(registry:getCount(), registry:getIndexByElement(3), registry:getElementByIndex(1) == ped)
+]]
