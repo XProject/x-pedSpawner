@@ -1,5 +1,6 @@
 ---@class svUtility: utility
 local utility = lib.load("modules.utility.shared")
+local shared = lib.require("shared") --[[@as shared]]
 
 local triggerClientEvent = TriggerClientEvent
 local triggerLatentClientEvent = TriggerLatentClientEvent
@@ -8,16 +9,16 @@ local triggerLatentClientEvent = TriggerLatentClientEvent
 ---@param eventName string
 ---@param source number
 ---@param ... any
-function utility.triggerEvent(eventName, source, ...)
-    return triggerClientEvent(eventName, source, ...)
+function utility.triggerClientEvent(eventName, source, ...)
+    return triggerClientEvent(("%s:%s"):format(shared.eventPrefix, eventName), source, ...)
 end
 
 ---triggers a latent client event
 ---@param eventName string
 ---@param source number
 ---@param ... any
-function utility.triggerLatentEvent(eventName, source, ...)
-    return triggerLatentClientEvent(eventName, source, 200000, ...)
+function utility.triggerLatentClientEvent(eventName, source, ...)
+    return triggerLatentClientEvent(("%s:%s"):format(shared.eventPrefix, eventName), source, 200000, ...)
 end
 
 ---@param source string | number

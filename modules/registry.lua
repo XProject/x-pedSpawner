@@ -1,1 +1,1 @@
-return lib.require(("modules.registry.%s"):format(lib.context))
+return lib.load(("modules.registry.%s"):format(lib.context))

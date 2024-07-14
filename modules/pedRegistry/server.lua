@@ -1,22 +1,22 @@
 ---@class CPedRegistry: Registry
----@field protected storage              Ped[]
----@field protected storageCount         number
----@field public    getCount             fun(this: CPedRegistry): storageCount: number
----@field public    getAll               fun(this: CPedRegistry): storage: Ped[]
----@field public    getElementByIndex    fun(this: CPedRegistry, index: number): Ped?
----@field public    getIndexByElement    fun(this: CPedRegistry, attribute: any, attributeValue: any): number?
----@field public    addElement           fun(this: CPedRegistry, element: any)
----@field public    removeElement        fun(this: CPedRegistry, element: any)
----@field public    addElementByIndex    fun(this: CPedRegistry, element: any, index: number)
----@field public    removeElementByIndex fun(this: CPedRegistry, index: number)
----@field private   stringIndex          table<string, number>
----@field public    getAllStringIndex    fun(this: CPedRegistry): stringIndex: table<string, number>
----@field public    getIndexByKey        fun(this: CPedRegistry, key: string): number?
----@field public    getElementByKey      fun(this: CPedRegistry, key: string): Ped?
-
+---@field protected storage                Ped[]
+---@field protected storageCount           number
+---@field public    getCount               fun(this: CPedRegistry): storageCount: number
+---@field public    getAll                 fun(this: CPedRegistry): storage: Ped[]
+---@field public    getElementByIndex      fun(this: CPedRegistry, index: number): Ped?
+---@field public    getIndexByElement      fun(this: CPedRegistry, attribute: any, attributeValue: any): number?
+---@field public    addElement             fun(this: CPedRegistry, element: any)
+---@field public    removeElement          fun(this: CPedRegistry, element: any)
+---@field public    addElementByIndex      fun(this: CPedRegistry, element: any, index: number)
+---@field public    removeElementByIndex   fun(this: CPedRegistry, index: number)
+---@field private   stringIndex            table<string, number>
+---@field public    getAllStringIndex      fun(this: CPedRegistry): stringIndex: table<string, number>
+---@field public    getIndexByKey          fun(this: CPedRegistry, key: string): number?
+---@field public    getElementByKey        fun(this: CPedRegistry, key: string): Ped?
+---@field public    getAllEntriesForClient fun(this: CPedRegistry): table<string, vector4>
 
 local class       = lib.require("modules.class") --[[@as class]]
-local CRegistry   = lib.require("modules.registry") --[[@class Registry]]
+local CRegistry   = lib.load("modules.registry") --[[@class Registry]]
 
 ---@class PedRegistry: CPedRegistry
 local PedRegistry = class("PedRegistry", CRegistry, {
@@ -43,6 +43,21 @@ local PedRegistry = class("PedRegistry", CRegistry, {
         getElementByKey = {
             method = function(this, key)
                 return this:getElementByIndex(this.stringIndex[key])
+            end
+        },
+
+        getAllEntriesForClient = {
+            method = function(this)
+                local entries = {}
+                local storage = this:getAll()
+
+                for i = 1, this:getCount() do
+                    entries[storage[i]:getKey()] = storage[i]:getCoords()
+                end
+
+                storage = nil
+
+                return entries
             end
         },
 

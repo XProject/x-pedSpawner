@@ -11,7 +11,7 @@ end
 
 local generatedStrings = {}
 local charset, charsetCount = {}, 0
-math.randomseed(math.floor(os.clock() * 100000))
+math.randomseed(math.floor(GetGameTimer() * 100000))
 do
     local ranges = { { 48, 57 }, { 65, 90 }, { 97, 122 } } -- 0-9, A-Z, a-z
 

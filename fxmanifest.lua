@@ -16,14 +16,16 @@ shared_scripts {
     -- "shared/*.lua",
 }
 
+files {
+    "shared.lua",
+    "modules/*.lua",
+    "modules/**/*.lua"
+}
+
 server_scripts {
     "server/*.lua"
 }
 
 client_scripts {
-    "client/*.lua",
+    "client/*.lua"
 }
-
--- files {
---     "modules/**/*client*.lua"
--- }
