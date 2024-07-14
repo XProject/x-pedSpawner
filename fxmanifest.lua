@@ -24,6 +24,6 @@ client_scripts {
     "client/*.lua",
 }
 
-files {
-    "modules/**/*client*.lua"
-}
+-- files {
+--     "modules/**/*client*.lua"
+-- }

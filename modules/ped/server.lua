@@ -19,8 +19,8 @@
 ---@field public  getBucket    fun(this: CPed): bucket: number
 ---@field public  setBucket    fun(this: CPed, newBucket: number)
 
-local class   = lib.require("modules.class.shared") --[[@as class]]
-local utility = lib.require("modules.utility.server") --[[@as svUtility]]
+local class   = lib.require("modules.class") --[[@as class]]
+local utility = lib.require("modules.utility") --[[@as utility]]
 
 local Ped
 ---@class Ped: CPed

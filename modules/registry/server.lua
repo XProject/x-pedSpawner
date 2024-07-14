@@ -10,7 +10,7 @@
 ---@field public    addElementByIndex    fun(this: CRegistry, element: any, index: number)
 ---@field public    removeElementByIndex fun(this: CRegistry, index: number)
 
-local class    = lib.require("modules.class.shared") --[[@as class]]
+local class    = lib.require("modules.class") --[[@as class]]
 
 ---@class Registry: CRegistry
 local Registry = class("Registry", nil, {

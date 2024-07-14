@@ -4,11 +4,11 @@
 ---@field public  getIndexByKey     fun(this: CPedRegistry, key: string): number?
 ---@field public  getElementByKey   fun(this: CPedRegistry, key: string): any?
 
-local class       = lib.require("modules.class.shared") --[[@as class]]
-local cRegistry   = lib.require("modules.registry.server")
+local class       = lib.require("modules.class") --[[@as class]]
+local CRegistry   = lib.require("modules.registry") --[[@class Registry]]
 
 ---@class PedRegistry: CPedRegistry
-local PedRegistry = class("PedRegistry", cRegistry, {
+local PedRegistry = class("PedRegistry", CRegistry, {
     final = true,
     members = {
         --[[ private attributes ]]
