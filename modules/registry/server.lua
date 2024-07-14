@@ -83,7 +83,7 @@ local Registry = class("Registry", nil, {
 
         removeElementByIndex = {
             method = function(this, index)
-                if not this:getByIndex(index) then
+                if not this:getElementByIndex(index) then
                     return error(("removeElementByIndex received %s which does not exist as an index in registry storage"):format(index))
                 end
 
