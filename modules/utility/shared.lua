@@ -45,4 +45,19 @@ function utility.randomString(length)
     return result
 end
 
+---@param ... any
+function utility.trace(...)
+    print("[^2TRACE^7]", ...)
+end
+
+---@param ... any
+function utility.warn(...)
+    print("[^3WARNING^7]", ...)
+end
+
+---@param ... any
+function utility.error(...)
+    print("[^1ERROR^7]", ...)
+end
+
 return utility
