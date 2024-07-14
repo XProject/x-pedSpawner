@@ -1,24 +1,24 @@
 ---@class CRegistry
----@field private storage any[]
----@field private storageCount number
----@field getCount fun(this: CRegistry): storageCount: number
----@field getAll fun(this: CRegistry): storage: any[]
----@field getElementByIndex fun(this: CRegistry, index: number): any?
----@field getIndexByElement fun(this: CRegistry, attribute: any, attributeValue: any): number?
----@field addElement fun(this: CRegistry, element: any)
----@field removeElement fun(this: CRegistry, element: any)
----@field addElementByIndex fun(this: CRegistry, element: any, index: number)
----@field removeElementByIndex fun(this: CRegistry, index: number)
+---@field protected storage              any[]
+---@field protected storageCount         number
+---@field public    getCount             fun(this: CRegistry): storageCount: number
+---@field public    getAll               fun(this: CRegistry): storage: any[]
+---@field public    getElementByIndex    fun(this: CRegistry, index: number): any?
+---@field public    getIndexByElement    fun(this: CRegistry, attribute: any, attributeValue: any): number?
+---@field public    addElement           fun(this: CRegistry, element: any)
+---@field public    removeElement        fun(this: CRegistry, element: any)
+---@field public    addElementByIndex    fun(this: CRegistry, element: any, index: number)
+---@field public    removeElementByIndex fun(this: CRegistry, index: number)
 
 local class    = lib.require("modules.class.shared") --[[@as class]]
 
 ---@class Registry: CRegistry
 local Registry = class("Registry", nil, {
     members = {
-        --[[ private attributes ]]
+        --[[ attributes ]]
 
-        storage      = { private = true, value = {} },
-        storageCount = { private = true, value = 0 },
+        storage      = { protected = true, value = {} },
+        storageCount = { protected = true, value = 0 },
 
         --[[ getters and setters ]]
 
@@ -55,6 +55,7 @@ local Registry = class("Registry", nil, {
         --[[ other methods ]]
 
         addElement = {
+            virtual = true,
             method = function(this, element)
                 this.storageCount += 1
                 this.storage[this.storageCount] = element
@@ -62,6 +63,7 @@ local Registry = class("Registry", nil, {
         },
 
         removeElement = {
+            virtual = true,
             method = function(this, element)
                 local index = this:getIndexByElement(element)
 
@@ -75,6 +77,7 @@ local Registry = class("Registry", nil, {
         },
 
         addElementByIndex = {
+            virtual = true,
             method = function(this, element, index)
                 this.storageCount += 1
                 table.insert(this.storage, index, element)
@@ -82,6 +85,7 @@ local Registry = class("Registry", nil, {
         },
 
         removeElementByIndex = {
+            virtual = true,
             method = function(this, index)
                 if not this:getElementByIndex(index) then
                     return error(("removeElementByIndex received %s which does not exist as an index in registry storage"):format(index))
