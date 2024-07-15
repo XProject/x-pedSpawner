@@ -23,6 +23,7 @@
 ---@field public  getDistanceToCoords fun(this: CPed, coordsToCheck: vector3): number
 ---@field public  getDistanceToPlayer fun(this: CPed, playerId: number): number
 ---@field public  isPlayerNearby      fun(this: CPed, playerId: number, flexUnits?: number): boolean
+---@field public  deleteEntity        fun(this: CPed)
 
 local class   = lib.require("modules.class") --[[@as class]]
 local utility = lib.require("modules.utility") --[[@as svUtility]]
@@ -190,6 +191,16 @@ Ped           = class("Ped", nil, {
         isPlayerNearby      = {
             method = function(this, playerId, flexUnits)
                 return this:getDistanceToPlayer(playerId) <= (this.radius + flexUnits)
+            end
+        },
+
+        deleteEntity        = {
+            method = function(this)
+                if DoesEntityExist(this.entityId) then
+                    DeleteEntity(this.entityId)
+                end
+
+                this:setEntityId(-1)
             end
         },
 

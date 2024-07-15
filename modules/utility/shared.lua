@@ -45,6 +45,27 @@ function utility.randomString(length)
     return result
 end
 
+local queues = {}
+local queueRunning = false
+
+---runs the passed function and parameters in a synced queue (not async)
+---@param func function
+---@param ... any
+function utility.queue(func, ...)
+    table.insert(queues, { func = func, args = { ... } })
+
+    if queueRunning then return end
+
+    queueRunning = true
+
+    while #queues > 0 do
+        queues[1].func(table.unpack(queues[1].args))
+        table.remove(queues, 1)
+    end
+
+    queueRunning = false
+end
+
 ---@param ... any
 function utility.trace(...)
     print("[^2TRACE^7]", ...)

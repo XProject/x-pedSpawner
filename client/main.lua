@@ -8,7 +8,7 @@ do
     CreateThread(function()
         while true do
             if NetworkIsPlayerActive(cache.playerId) then
-                utility.triggerServerEvent("requestToSyncAllPeds")
+                utility.triggerServerEvent("playerLoaded")
                 break
             end
 

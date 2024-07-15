@@ -7,12 +7,16 @@ local loadedPlayers = class.new(lib.load("modules.registry")) --[[@as Registry]]
 local pedRegistry   = class.new(lib.load("modules.pedRegistry")) --[[@as PedRegistry]]
 
 ---creates an instance of the Ped class, stores it in an storage, and returns the object
----@param pedModel  number
+---@param pedModel  number | string
 ---@param pedCoords vector4
 ---@param pedRadius number
 ---@param pedBucket? number
 ---@return Ped
 function handler.create(pedModel, pedCoords, pedRadius, pedBucket)
+    if type(pedModel) == "string" then
+        pedModel = joaat(pedModel)
+    end
+
     ---@type Ped
     local ped = class.new(CPed, pedModel, pedCoords, pedRadius, pedBucket)
 
@@ -33,6 +37,7 @@ function handler.remove(ped)
 
     ---@cast ped -?
 
+    ped:deleteEntity()
     pedRegistry:removeElement(ped)
 
     return true
@@ -40,16 +45,13 @@ end
 
 local utility = lib.require("modules.utility") --[[@as svUtility]]
 
-utility.registerNetEvent("enterPedRadius", function(pedKey)
-    local playerId = source
-
+---spawns ped while a player enters its zone
+---@param playerId number
+---@param pedKey string
+local function onEnterPedRadius(playerId, pedKey)
     local ped = pedRegistry:getElementByKey(pedKey)
 
     if not ped or not ped:isPlayerNearby(playerId, 5) then return utility.cheatDetected(playerId) end
-
-    if ped:getLoadState() then return end -- this ped is either loading or loaded
-
-    ped:setLoadState("loading")
 
     local pedCoords = ped:getCoords()
 
@@ -61,40 +63,31 @@ utility.registerNetEvent("enterPedRadius", function(pedKey)
     end
 
     ped:setEntityId(pedEntity)
-    ped:setLoadState(true)
 
     FreezeEntityPosition(pedEntity, true)
 
     TriggerEvent("x-pedSpawner:enteredPedRadius", playerId, pedKey)
-end)
+end
 
-utility.registerNetEvent("exitPedRadius", function(pedKey)
-    local playerId = source
-
+---removes ped while a player exits its zone
+---@param playerId number
+---@param pedKey string
+local function onExitPedRadius(playerId, pedKey)
     local ped = pedRegistry:getElementByKey(pedKey)
 
     if not ped or ped:isPlayerNearby(playerId, -5) then return utility.cheatDetected(playerId) end
 
-    if not ped:getLoadState() or ped:getLoadState() == "unloading" then return end -- this ped is either unloading or unloaded
-
-    while ped:getLoadState() == "loading" do
-        Wait(0)
-    end
-
-    ped:setLoadState("unloading")
-
-    local pedEntity = ped:getEntityId()
-
-    if not pedEntity or not DoesEntityExist(pedEntity) then
-        return utility.error("The ped entity requested by the Player (^5%s^7) for the key of (^1%s^7) could not be deleted as it doesn't exist!")
-    end
-
-    DeleteEntity(pedEntity)
-
-    ped:setEntityId(-1)
-    ped:setLoadState(false)
+    ped:deleteEntity()
 
     TriggerEvent("x-pedSpawner:exitedPedRadius", playerId, pedKey)
+end
+
+utility.registerNetEvent("enterPedRadius", function(pedKey)
+    utility.queue(onEnterPedRadius, source, pedKey)
+end)
+
+utility.registerNetEvent("exitPedRadius", function(pedKey)
+    utility.queue(onExitPedRadius, source, pedKey)
 end)
 
 do
@@ -112,7 +105,7 @@ local function syncAllPedsWithPlayer(playerId)
     utility.triggerLatentClientEvent("syncAllPeds", playerId or -1, pedRegistry:getAllEntriesForClient())
 end
 
-utility.registerNetEvent("requestToSyncAllPeds", function()
+utility.registerNetEvent("playerLoaded", function()
     local playerId = source
 
     if loadedPlayers:getIndexByElement(playerId) then
@@ -136,9 +129,7 @@ AddEventHandler("onResourceStop", function(resource)
     if resource ~= cache.resource then return end
 
     for i = 1, pedRegistry:getCount() do
-        local pedEntity = pedRegistry:getElementByIndex(i):getEntityId()
-
-        if pedEntity and DoesEntityExist(pedEntity) then DeleteEntity(pedEntity) end
+        pedRegistry:getElementByIndex(i):deleteEntity()
     end
 end)
 
