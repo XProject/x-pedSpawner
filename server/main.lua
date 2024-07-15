@@ -127,6 +127,16 @@ AddEventHandler("playerDropped", function()
     end
 end)
 
+AddEventHandler("onResourceStop", function(resource)
+    if resource ~= cache.resource then return end
+
+    for i = 1, pedRegistry:getCount() do
+        local pedEntity = pedRegistry:getElementByIndex(i):getEntityId()
+
+        if pedEntity and DoesEntityExist(pedEntity) then DeleteEntity(pedEntity) end
+    end
+end)
+
 collectgarbage("generational")
 
 return handler
