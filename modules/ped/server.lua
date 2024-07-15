@@ -22,7 +22,7 @@
 ---@field public  setLoadState        fun(this: CPed, newLoadState: boolean | string)
 ---@field public  getDistanceToCoords fun(this: CPed, coordsToCheck: vector3): number
 ---@field public  getDistanceToPlayer fun(this: CPed, playerId: number): number
----@field public  isPlayerNearby      fun(this: CPed, playerId: number): boolean
+---@field public  isPlayerNearby      fun(this: CPed, playerId: number, flexUnits?: number): boolean
 
 local class   = lib.require("modules.class") --[[@as class]]
 local utility = lib.require("modules.utility") --[[@as svUtility]]
@@ -186,8 +186,8 @@ Ped           = class("Ped", nil, {
         },
 
         isPlayerNearby      = {
-            method = function(this, playerId)
-                return this:getDistanceToPlayer(playerId) <= this.radius
+            method = function(this, playerId, flexUnits)
+                return this:getDistanceToPlayer(playerId) <= (this.radius + flexUnits)
             end
         },
 

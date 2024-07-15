@@ -45,7 +45,7 @@ utility.registerNetEvent("enterPedRadius", function(pedKey)
 
     local ped = pedRegistry:getElementByKey(pedKey)
 
-    if not ped or not ped:isPlayerNearby(playerId) then return utility.cheatDetected(playerId) end
+    if not ped or not ped:isPlayerNearby(playerId, 5) then return utility.cheatDetected(playerId) end
 
     if ped:getLoadState() then return end -- this ped is either loading or loaded
 
@@ -73,7 +73,7 @@ utility.registerNetEvent("exitPedRadius", function(pedKey)
 
     local ped = pedRegistry:getElementByKey(pedKey)
 
-    if not ped or ped:isPlayerNearby(playerId) then return utility.cheatDetected(playerId) end
+    if not ped or ped:isPlayerNearby(playerId, -5) then return utility.cheatDetected(playerId) end
 
     if not ped:getLoadState() or ped:getLoadState() == "unloading" then return end -- this ped is either unloading or unloaded
 
