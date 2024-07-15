@@ -1,3 +1,4 @@
+---@diagnostic disable: invisible
 ---@class CPedRegistry: Registry
 ---@field protected storage                Ped[]
 ---@field protected storageCount           number
@@ -29,33 +30,51 @@ local PedRegistry = class("PedRegistry", CRegistry, {
         --[[ getters and setters ]]
 
         getAllStringIndex = {
+            ---@param this CPedRegistry
+            ---@return table<string, number>
             method = function(this)
                 return this.stringIndex
             end
         },
 
         getIndexByKey = {
+            ---@param this CPedRegistry
+            ---@param key string
+            ---@return number?
             method = function(this, key)
                 return this.stringIndex[key]
             end
         },
 
         getElementByKey = {
+            ---@param this CPedRegistry
+            ---@param key string
+            ---@return Ped?
             method = function(this, key)
                 return this:getElementByIndex(this.stringIndex[key])
             end
         },
 
+        ---@class CClientEntry
+        ---@field key string
+        ---@field coords vector4
+        ---@field radius number
+
         getAllEntriesForClient = {
+            ---@param this CPedRegistry
+            ---@return CClientEntry[]
             method = function(this)
                 local entries = {}
-                local storage = this:getAll()
 
                 for i = 1, this:getCount() do
-                    entries[storage[i]:getKey()] = storage[i]:getCoords()
-                end
+                    local element = this:getElementByIndex(i) --[[@as Ped]]
 
-                storage = nil
+                    entries[i] = {
+                        key = element:getKey(),
+                        coords = element:getCoords(),
+                        radius = element:getRadius()
+                    }
+                end
 
                 return entries
             end
@@ -65,6 +84,8 @@ local PedRegistry = class("PedRegistry", CRegistry, {
 
         -- overrides addElement from Registry class
         addElement = {
+            ---@param this CPedRegistry
+            ---@param element Ped
             method = function(this, element)
                 this.storageCount += 1
                 this.storage[this.storageCount] = element
@@ -74,6 +95,8 @@ local PedRegistry = class("PedRegistry", CRegistry, {
 
         -- overrides removeElement from Registry class
         removeElement = {
+            ---@param this CPedRegistry
+            ---@param element Ped
             method = function(this, element)
                 local index = this:getIndexByElement(element)
 
@@ -89,6 +112,9 @@ local PedRegistry = class("PedRegistry", CRegistry, {
 
         -- overrides addElementByIndex from Registry class
         addElementByIndex = {
+            ---@param this CPedRegistry
+            ---@param element Ped
+            ---@param index number
             method = function(this, element, index)
                 this.storageCount += 1
                 table.insert(this.storage, index, element)
@@ -98,6 +124,8 @@ local PedRegistry = class("PedRegistry", CRegistry, {
 
         -- overrides removeElementByIndex from Registry class
         removeElementByIndex = {
+            ---@param this CPedRegistry
+            ---@param index number
             method = function(this, index)
                 local element = this:getElementByIndex(index)
 

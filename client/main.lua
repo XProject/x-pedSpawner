@@ -1,19 +1,23 @@
+---@class Point
+local CPoint  = lib.require("modules.point")
+local class   = lib.require("modules.class") --[[@as class]]
 local utility = lib.require("modules.utility") --[[@as clUtility]]
+
 
 do
     CreateThread(function()
         while true do
-            Wait(1000)
-
             if NetworkIsPlayerActive(cache.playerId) then
                 utility.triggerServerEvent("requestToSyncAllPeds")
                 break
             end
+
+            Wait(1000)
         end
     end)
 end
 
----@type table<string, vector4>
+---@type CClientEntry[]
 local allPeds = {}
 local havePedsBeenSync = false
 
@@ -22,10 +26,16 @@ utility.registerNetEvent("syncAllPeds", function(_allPeds)
 
     havePedsBeenSync = true
 
+    ---@cast _allPeds CClientEntry[]
+
+    for i = 1, #_allPeds do
+        local entry = _allPeds[i]
+
+        class.new(CPoint, entry.key, entry.coords, entry.radius)
+    end
+
     allPeds = _allPeds
     _allPeds = nil
-
-    for key, value in pairs(allPeds) do
-        utility.trace(key, value)
-    end
 end)
+
+collectgarbage("generational")

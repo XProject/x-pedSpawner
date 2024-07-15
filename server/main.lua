@@ -40,7 +40,7 @@ end
 
 local utility = lib.require("modules.utility") --[[@as svUtility]]
 
-utility.registerNetEvent("enteredPedRadius", function(pedKey)
+utility.registerNetEvent("enterPedRadius", function(pedKey)
     local playerId = source
 
     local ped = pedRegistry:getElementByKey(pedKey)
@@ -60,15 +60,46 @@ utility.registerNetEvent("enteredPedRadius", function(pedKey)
         return utility.error("The ped entity requested by the Player (^5%s^7) for the key of (^1%s^7) could not be spawned!")
     end
 
-    ped:setLoadState(true)
     ped:setEntityId(pedEntity)
+    ped:setLoadState(true)
 
     FreezeEntityPosition(pedEntity, true)
+
+    TriggerEvent("x-pedSpawner:enteredPedRadius", playerId, pedKey)
+end)
+
+utility.registerNetEvent("exitPedRadius", function(pedKey)
+    local playerId = source
+
+    local ped = pedRegistry:getElementByKey(pedKey)
+
+    if not ped or ped:isPlayerNearby(playerId) then return utility.cheatDetected(playerId) end
+
+    if not ped:getLoadState() or ped:getLoadState() == "unloading" then return end -- this ped is either unloading or unloaded
+
+    while ped:getLoadState() == "loading" do
+        Wait(0)
+    end
+
+    ped:setLoadState("unloading")
+
+    local pedEntity = ped:getEntityId()
+
+    if not pedEntity or not DoesEntityExist(pedEntity) then
+        return utility.error("The ped entity requested by the Player (^5%s^7) for the key of (^1%s^7) could not be spawned!")
+    end
+
+    DeleteEntity(pedEntity)
+
+    ped:setEntityId(-1)
+    ped:setLoadState(false)
+
+    TriggerEvent("x-pedSpawner:exitedPedRadius", playerId, pedKey)
 end)
 
 do
-    local ped = handler.create(123456789, vector4(0), 0.0)
-    print(ped)
+    handler.create(joaat("a_m_m_eastsa_01"), vector4(-788.3876, -2335.1282, 14.8174, 220.5283), 10.0)
+    handler.create(joaat("a_m_m_eastsa_01"), vector4(-789.4866, -2334.0007, 14.8078, 218.6251), 10.0)
 end
 
 ---@param playerId? number if omitted it will sync with all players
@@ -79,7 +110,9 @@ end
 utility.registerNetEvent("requestToSyncAllPeds", function()
     local playerId = source
 
-    if loadedPlayers:getIndexByElement(playerId) then return utility.cheatDetected(playerId) end
+    if loadedPlayers:getIndexByElement(playerId) then
+        return utility.cheatDetected(playerId)
+    end
 
     loadedPlayers:addElement(playerId)
 
@@ -89,9 +122,11 @@ end)
 AddEventHandler("playerDropped", function()
     local playerId = source
 
-    if not loadedPlayers:getIndexByElement(playerId) then return end
-
-    loadedPlayers:removeElement(playerId)
+    if loadedPlayers:getIndexByElement(playerId) then
+        return loadedPlayers:removeElement(playerId)
+    end
 end)
+
+collectgarbage("generational")
 
 return handler
