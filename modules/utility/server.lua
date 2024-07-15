@@ -27,7 +27,7 @@ function utility.cheatDetected(source, ...)
     print(("[^1CHEATING^7] Player (^5%s^7) with the identifier of (^5%s^7) is detected ^1cheating^7!"):format(source, GetPlayerIdentifierByType(source --[[@as string]], "license")))
 
     if ... then
-        print("[^1CHEATING^7]", ...)
+        print(("[^1CHEATING^7] %s"):format(...))
     end
 end
 

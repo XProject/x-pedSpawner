@@ -6,7 +6,6 @@
 ---@field private entityId            number
 ---@field private networkId           number
 ---@field private bucket              number
----@field private loadState           boolean | string
 ---@field public  getKey              fun(this: CPed): key: string
 ---@field public  getModel            fun(this: CPed): model: string
 ---@field public  getCoords           fun(this: CPed): coords: vector4
@@ -18,11 +17,9 @@
 ---@field public  getNetworkId        fun(this: CPed): networkId: number
 ---@field public  getBucket           fun(this: CPed): bucket: number
 ---@field public  setBucket           fun(this: CPed, newBucket: number)
----@field public  getLoadState        fun(this: CPed): loadState: boolean | string
----@field public  setLoadState        fun(this: CPed, newLoadState: boolean | string)
 ---@field public  getDistanceToCoords fun(this: CPed, coordsToCheck: vector3): number
 ---@field public  getDistanceToPlayer fun(this: CPed, playerId: number): number
----@field public  isPlayerNearby      fun(this: CPed, playerId: number, flexUnits?: number): boolean
+---@field public  isPlayerInRadius    fun(this: CPed, playerId: number, flexUnits?: number): boolean
 ---@field public  deleteEntity        fun(this: CPed)
 
 local class   = lib.require("modules.class") --[[@as class]]
@@ -40,7 +37,6 @@ Ped           = class("Ped", nil, {
         entityId  = { private = true, value = false },
         networkId = { private = true, value = false },
         bucket    = { private = true, value = false },
-        loadState = { private = true, value = false },
 
         --[[ getters and setters ]]
 
@@ -163,19 +159,6 @@ Ped           = class("Ped", nil, {
             end
         },
 
-        -- loadState
-        getLoadState        = {
-            method = function(this)
-                return this.loadState
-            end
-        },
-
-        setLoadState        = {
-            method = function(this, newLoadState)
-                this.loadState = newLoadState
-            end
-        },
-
         getDistanceToCoords = {
             method = function(this, coordsToCheck)
                 return #(vector3(coordsToCheck.x, coordsToCheck.y, coordsToCheck.z) - vector3(this.coords.x, this.coords.y, this.coords.z))
@@ -188,7 +171,7 @@ Ped           = class("Ped", nil, {
             end
         },
 
-        isPlayerNearby      = {
+        isPlayerInRadius    = {
             method = function(this, playerId, flexUnits)
                 return this:getDistanceToPlayer(playerId) <= (this.radius + flexUnits)
             end
