@@ -86,7 +86,7 @@ utility.registerNetEvent("exitPedRadius", function(pedKey)
     local pedEntity = ped:getEntityId()
 
     if not pedEntity or not DoesEntityExist(pedEntity) then
-        return utility.error("The ped entity requested by the Player (^5%s^7) for the key of (^1%s^7) could not be spawned!")
+        return utility.error("The ped entity requested by the Player (^5%s^7) for the key of (^1%s^7) could not be deleted as it doesn't exist!")
     end
 
     DeleteEntity(pedEntity)
@@ -100,6 +100,11 @@ end)
 do
     handler.create(joaat("a_m_m_eastsa_01"), vector4(-788.3876, -2335.1282, 14.8174, 220.5283), 10.0)
     handler.create(joaat("a_m_m_eastsa_01"), vector4(-789.4866, -2334.0007, 14.8078, 218.6251), 10.0)
+    handler.create(joaat("a_m_m_eastsa_01"), vector4(-789.4866, -2334.0007, 14.8078, 218.6251), 10.0, 2)
+
+    RegisterCommand("bucket", function(source, args)
+        SetPlayerRoutingBucket(source, tonumber(args[1]) --[[@as integer]])
+    end, false)
 end
 
 ---@param playerId? number if omitted it will sync with all players

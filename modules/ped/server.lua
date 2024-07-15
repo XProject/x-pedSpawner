@@ -126,6 +126,8 @@ Ped           = class("Ped", nil, {
 
                 this.entityId = newEntityId
                 this.networkId = newNetworkId
+
+                this:setBucket(this.bucket)
             end
         },
 
@@ -212,7 +214,7 @@ Ped           = class("Ped", nil, {
         this.model  = model
         this.coords = coords
         this.radius = radius
-        this.bucket = bucket or 1 -- defaults to bucket 1
+        this.bucket = bucket or 0 -- defaults to bucket 0
     end
 })
 
