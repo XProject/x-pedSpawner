@@ -1,5 +1,6 @@
 ---@class Point
 local CPoint  = lib.require("modules.point")
+local shared  = lib.require("shared") --[[@as shared]]
 local class   = lib.require("modules.class") --[[@as class]]
 local utility = lib.require("modules.utility") --[[@as clUtility]]
 
@@ -36,6 +37,23 @@ utility.registerNetEvent("syncAllPeds", function(_allPeds)
 
     allPeds = _allPeds
     _allPeds = nil
+end)
+
+AddStateBagChangeHandler(shared.stateBagName, "", function(bagName, key, value)
+    if not value or not key:find(cache.resource) then return end
+
+    local entity = GetEntityFromStateBagName(bagName)
+
+    if not entity or entity == 0 then return end
+
+    value = value:gsub("%%entity", entity)
+    local fn, err = load(value)
+
+    if not fn or err then
+        return utility.error(("^1Error loading chunk for %s. Error message: %s^0"):format(shared.stateBagName, err))
+    end
+
+    fn()
 end)
 
 collectgarbage("generational")

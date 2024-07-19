@@ -1,26 +1,28 @@
 ---@class CPed
----@field private key                 string
----@field private model               number
----@field private coords              vector4
----@field private radius              number
----@field private entityId            number
----@field private networkId           number
----@field private bucket              number
----@field public  getKey              fun(this: CPed): key: string
----@field public  getModel            fun(this: CPed): model: string
----@field public  getCoords           fun(this: CPed): coords: vector4
----@field public  setCoords           fun(this: CPed, newCoords: vector4)
----@field public  getRadius           fun(this: CPed): radius: number
----@field public  setRadius           fun(this: CPed, newRadius: number)
----@field public  getEntityId         fun(this: CPed): entityId: number
----@field public  setEntityId         fun(this: CPed, newEntityId: number)
----@field public  getNetworkId        fun(this: CPed): networkId: number
----@field public  getBucket           fun(this: CPed): bucket: number
----@field public  setBucket           fun(this: CPed, newBucket: number)
----@field public  getDistanceToCoords fun(this: CPed, coordsToCheck: vector3): number
----@field public  getDistanceToPlayer fun(this: CPed, playerId: number): number
----@field public  isPlayerInRadius    fun(this: CPed, playerId: number, flexUnits?: number): boolean
----@field public  deleteEntity        fun(this: CPed)
+---@field private key                    string
+---@field private model                  number
+---@field private coords                 vector4
+---@field private radius                 number
+---@field private entityId               number
+---@field private networkId              number
+---@field private bucket                 number
+---@field private clientOnEnterScript?   string
+---@field public  getKey                 fun(this: CPed): key: string
+---@field public  getModel               fun(this: CPed): model: string
+---@field public  getCoords              fun(this: CPed): coords: vector4
+---@field public  setCoords              fun(this: CPed, newCoords: vector4)
+---@field public  getRadius              fun(this: CPed): radius: number
+---@field public  setRadius              fun(this: CPed, newRadius: number)
+---@field public  getEntityId            fun(this: CPed): entityId: number
+---@field public  setEntityId            fun(this: CPed, newEntityId: number)
+---@field public  getNetworkId           fun(this: CPed): networkId: number
+---@field public  getBucket              fun(this: CPed): bucket: number
+---@field public  setBucket              fun(this: CPed, newBucket: number)
+---@field public  getDistanceToCoords    fun(this: CPed, coordsToCheck: vector3): number
+---@field public  getDistanceToPlayer    fun(this: CPed, playerId: number): number
+---@field public  isPlayerInRadius       fun(this: CPed, playerId: number, flexUnits?: number): boolean
+---@field public  deleteEntity           fun(this: CPed)
+---@field public  getClientOnEnterScript fun(this: CPed)
 
 local class   = lib.require("modules.class") --[[@as class]]
 local utility = lib.require("modules.utility") --[[@as svUtility]]
@@ -30,37 +32,38 @@ local Ped
 Ped           = class("Ped", nil, {
     members = {
         --[[ private attributes ]]
-        key       = { private = true, value = false },
-        model     = { private = true, value = false },
-        coords    = { private = true, value = false },
-        radius    = { private = true, value = false },
-        entityId  = { private = true, value = false },
-        networkId = { private = true, value = false },
-        bucket    = { private = true, value = false },
+        key                 = { private = true, value = false },
+        model               = { private = true, value = false },
+        coords              = { private = true, value = false },
+        radius              = { private = true, value = false },
+        entityId            = { private = true, value = false },
+        networkId           = { private = true, value = false },
+        bucket              = { private = true, value = false },
+        clientOnEnterScript = { private = true, value = false },
 
         --[[ getters and setters ]]
 
         -- key
-        getKey              = {
+        getKey                 = {
             method = function(this)
                 return this.key
             end
         },
 
         -- model
-        getModel            = {
+        getModel               = {
             method = function(this)
                 return this.model
             end
         },
 
         -- coords
-        getCoords           = {
+        getCoords              = {
             method = function(this)
                 return this.coords
             end
         },
-        setCoords           = {
+        setCoords              = {
             method = function(this, newCoords)
                 local _type = type(newCoords)
 
@@ -73,12 +76,12 @@ Ped           = class("Ped", nil, {
         },
 
         -- radius
-        getRadius           = {
+        getRadius              = {
             method = function(this)
                 return this.radius
             end
         },
-        setRadius           = {
+        setRadius              = {
             method = function(this, newRadius)
                 local _type = type(newRadius)
 
@@ -97,12 +100,12 @@ Ped           = class("Ped", nil, {
         },
 
         -- entityId
-        getEntityId         = {
+        getEntityId            = {
             method = function(this)
                 return this.entityId
             end
         },
-        setEntityId         = {
+        setEntityId            = {
             method = function(this, newEntityId)
                 local _type = type(newEntityId)
 
@@ -129,19 +132,19 @@ Ped           = class("Ped", nil, {
         },
 
         -- networkId
-        getNetworkId        = {
+        getNetworkId           = {
             method = function(this)
                 return this.networkId
             end
         },
 
         -- bucket
-        getBucket           = {
+        getBucket              = {
             method = function(this)
                 return this.entityId and GetEntityRoutingBucket(this.entityId) or this.bucket
             end
         },
-        setBucket           = {
+        setBucket              = {
             method = function(this, newBucket)
                 local _type = type(newBucket)
 
@@ -159,31 +162,37 @@ Ped           = class("Ped", nil, {
             end
         },
 
-        getDistanceToCoords = {
+        getDistanceToCoords    = {
             method = function(this, coordsToCheck)
                 return #(vector3(coordsToCheck.x, coordsToCheck.y, coordsToCheck.z) - vector3(this.coords.x, this.coords.y, this.coords.z))
             end
         },
 
-        getDistanceToPlayer = {
+        getDistanceToPlayer    = {
             method = function(this, playerId)
                 return this:getDistanceToCoords(GetEntityCoords(GetPlayerPed(playerId)))
             end
         },
 
-        isPlayerInRadius    = {
+        isPlayerInRadius       = {
             method = function(this, playerId, flexUnits)
                 return this:getDistanceToPlayer(playerId) <= (this.radius + flexUnits)
             end
         },
 
-        deleteEntity        = {
+        deleteEntity           = {
             method = function(this)
                 if DoesEntityExist(this.entityId) then
                     DeleteEntity(this.entityId)
                 end
 
                 this:setEntityId(-1)
+            end
+        },
+
+        getClientOnEnterScript = {
+            method = function(this)
+                return this.clientOnEnterScript
             end
         },
 
@@ -203,12 +212,13 @@ Ped           = class("Ped", nil, {
             end
         }
     },
-    ctor    = function(this, _ --[[parent_ctor]], model, coords, radius, bucket)
-        this.key    = utility.randomString(5)
-        this.model  = model
-        this.coords = coords
-        this.radius = radius
-        this.bucket = bucket or 0 -- defaults to bucket 0
+    ctor    = function(this, _ --[[parent_ctor]], model, coords, radius, bucket, clientOnEnterScript)
+        this.key                 = utility.randomString(5)
+        this.model               = model
+        this.coords              = coords
+        this.radius              = radius
+        this.bucket              = type(bucket) == "number" and bucket or 0 -- defaults to bucket 0
+        this.clientOnEnterScript = type(clientOnEnterScript) == "string" and clientOnEnterScript or false
     end
 })
 

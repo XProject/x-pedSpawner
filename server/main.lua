@@ -1,5 +1,6 @@
 ---@class Ped
 local CPed              = lib.load("modules.ped")
+local shared            = lib.require("shared") --[[@as shared]]
 local class             = lib.require("modules.class") --[[@as class]]
 local utility           = lib.require("modules.utility") --[[@as svUtility]]
 local pedRegistry       = class.new(lib.load("modules.pedRegistry")) --[[@as PedRegistry]]
@@ -27,19 +28,21 @@ local function onEnterPedRadius(playerId, pedKey)
 
     pedPlayerRegistry[pedKey]:addElement(playerId)
 
-    if ped:getEntityId() then return end -- the ped entity is already spawned by another players
+    if not ped:getEntityId() then -- if the entity is not already spawned
+        local pedCoords = ped:getCoords()
 
-    local pedCoords = ped:getCoords()
+        local pedEntity = CreatePed(0, ped:getModel(), pedCoords.x, pedCoords.y, pedCoords.z, pedCoords.w, true, true)
 
-    local pedEntity = CreatePed(0, ped:getModel(), pedCoords.x, pedCoords.y, pedCoords.z, pedCoords.w, true, true)
+        if not pedEntity then
+            return utility.error("The ped entity requested by the Player (^5%s^7) for the key of (^1%s^7) could not be spawned!")
+        end
 
-    if not pedEntity then
-        return utility.error("The ped entity requested by the Player (^5%s^7) for the key of (^1%s^7) could not be spawned!")
+        ped:setEntityId(pedEntity)
+
+        FreezeEntityPosition(pedEntity, true)
+
+        Entity(pedEntity).state:set(shared.stateBagName, ped:getClientOnEnterScript(), true)
     end
-
-    ped:setEntityId(pedEntity)
-
-    FreezeEntityPosition(pedEntity, true)
 
     TriggerEvent("x-pedSpawner:enteredPedRadius", playerId, pedKey)
 end
@@ -99,7 +102,7 @@ utility.registerNetEvent("playerLoaded", function()
 
     loadedPlayers:addElement(playerId)
 
-    syncAllPedsWithPlayer(playerId)
+    utility.queue(syncAllPedsWithPlayer, playerId)
 end)
 
 AddEventHandler("playerDropped", function()
@@ -111,7 +114,7 @@ AddEventHandler("playerDropped", function()
 
     for pedKey, registry in pairs(pedPlayerRegistry) do
         if registry:getIndexByElement(playerId) then
-            onExitPedRadius(playerId, pedKey, true)
+            utility.queue(onExitPedRadius, playerId, pedKey, true)
         end
     end
 end)
@@ -135,14 +138,15 @@ local handler = {}
 ---@param pedCoords vector4
 ---@param pedRadius number
 ---@param pedBucket? number
+---@param clientOnEnterScript? string
 ---@return Ped
-function handler.create(pedModel, pedCoords, pedRadius, pedBucket)
+function handler.create(pedModel, pedCoords, pedRadius, pedBucket, clientOnEnterScript)
     if type(pedModel) == "string" then
         pedModel = joaat(pedModel)
     end
 
     ---@type Ped
-    local ped = class.new(CPed, pedModel, pedCoords, pedRadius, pedBucket)
+    local ped = class.new(CPed, pedModel, pedCoords, pedRadius, pedBucket, clientOnEnterScript)
 
     pedRegistry:addElement(ped)
 
@@ -180,9 +184,23 @@ function handler.remove(ped)
     return true
 end
 
-handler.create(joaat("a_m_m_eastsa_01"), vector4(-788.3876, -2335.1282, 14.8174, 220.5283), 10.0)
+local clientScript = [[
+SetEntityInvincible(%entity, true)
+FreezeEntityPosition(%entity, true)
+SetEntityProofs(%entity, true, true, true, false, true, true, true, true)
+SetPedDiesWhenInjured(%entity, false)
+SetPedFleeAttributes(%entity, 2, true)
+SetPedCanPlayAmbientAnims(%entity, false)
+SetPedCanLosePropsOnDamage(%entity, false, 0)
+SetPedRelationshipGroupHash(%entity, `PLAYER`)
+SetBlockingOfNonTemporaryEvents(%entity, true)
+SetPedCanRagdollFromPlayerImpact(%entity, false)
+]]
+
+handler.create(joaat("a_m_m_eastsa_01"), vector4(-788.3876, -2335.1282, 14.8174, 220.5283), 10.0, 0, clientScript)
+
 handler.create(joaat("a_m_m_eastsa_01"), vector4(-789.4866, -2334.0007, 14.8078, 218.6251), 10.0)
-handler.create(joaat("a_m_m_eastsa_01"), vector4(-789.4866, -2334.0007, 14.8078, 218.6251), 10.0, 2)
+handler.create(joaat("a_m_m_eastsa_01"), vector4(-789.4866, -2334.0007, 14.8078, 218.6251), 10.0, 2, clientScript)
 
 RegisterCommand("bucket", function(source, args)
     SetPlayerRoutingBucket(source, tonumber(args[1]) --[[@as integer]])
