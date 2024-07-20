@@ -55,7 +55,7 @@ utility.registerNetEvent("syncAllPeds", function(allPeds)
     end
 end)
 
-AddStateBagChangeHandler(shared.stateBagName, "entity", function(bagName, key, chunk)
+AddStateBagChangeHandler(shared.stateBagName, "", function(bagName, key, chunk)
     if not chunk or not key:find(cache.resource) then return end
 
     local entity = GetEntityFromStateBagName(bagName)
