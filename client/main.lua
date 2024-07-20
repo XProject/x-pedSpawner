@@ -23,33 +23,28 @@ utility.registerNetEvent("syncAllPeds", function(allPeds)
     -- making sure the event is getting called from the server
     if source == "" or GetInvokingResource() then return end
 
+    -- creating a set of new keys for faster lookup
+    local newKeys = {}
+    for i = 1, #allPeds do
+        newKeys[allPeds[i].key] = true
+    end
+
     -- removing the registered points
-    local points = {}
+    local existingKeys = {}
     local registeredPoints = lib.points.getAllPoints()
-
     for _, point in pairs(registeredPoints) do
-        local shouldRemove = true
-
-        for i = 1, #allPeds do
-            local entry = allPeds[i]
-
-            if point.key == entry.key then -- means the previously registered point still exists, therefore its data should not get removed
-                points[i]    = true
-                shouldRemove = false
-                break
-            end
-        end
-
-        if shouldRemove then
+        if not newKeys[point.key] then
             point:remove()
+        else
+            existingKeys[point.key] = true
         end
     end
 
-    -- register points
+    -- register new points
     for i = 1, #allPeds do
         local entry = allPeds[i]
 
-        if not points[i] then
+        if not existingKeys[entry.key] then
             class.new(CPoint, entry.key, entry.coords, entry.radius)
         end
     end
