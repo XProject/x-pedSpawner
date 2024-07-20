@@ -58,6 +58,7 @@ Point = class("Point", nil, {
     },
     ctor    = function(this, _ --[[parent_ctor]], key, coords, radius)
         local p     = lib.points.new({
+            key = key,
             coords = coords,
             distance = radius,
             onEnter = function()

@@ -18,36 +18,52 @@ do
     end)
 end
 
----@type CClientEntry[]
-local allPeds = {}
-local havePedsBeenSync = false
+---@param allPeds CClientEntry[]
+utility.registerNetEvent("syncAllPeds", function(allPeds)
+    -- making sure the event is getting called from the server
+    if source == "" or GetInvokingResource() then return end
 
-utility.registerNetEvent("syncAllPeds", function(_allPeds)
-    if havePedsBeenSync then return end
+    -- removing the registered points
+    local points = {}
+    local registeredPoints = lib.points.getAllPoints()
 
-    havePedsBeenSync = true
+    for _, point in pairs(registeredPoints) do
+        local shouldRemove = true
 
-    ---@cast _allPeds CClientEntry[]
+        for i = 1, #allPeds do
+            local entry = allPeds[i]
 
-    for i = 1, #_allPeds do
-        local entry = _allPeds[i]
+            if point.key == entry.key then -- means the previously registered point still exists, therefore its data should not get removed
+                points[i]    = true
+                shouldRemove = false
+                break
+            end
+        end
 
-        class.new(CPoint, entry.key, entry.coords, entry.radius)
+        if shouldRemove then
+            point:remove()
+        end
     end
 
-    allPeds = _allPeds
-    _allPeds = nil
+    -- register points
+    for i = 1, #allPeds do
+        local entry = allPeds[i]
+
+        if not points[i] then
+            class.new(CPoint, entry.key, entry.coords, entry.radius)
+        end
+    end
 end)
 
-AddStateBagChangeHandler(shared.stateBagName, "", function(bagName, key, value)
-    if not value or not key:find(cache.resource) then return end
+AddStateBagChangeHandler(shared.stateBagName, "entity", function(bagName, key, chunk)
+    if not chunk or not key:find(cache.resource) then return end
 
     local entity = GetEntityFromStateBagName(bagName)
 
     if not entity or entity == 0 then return end
 
-    value = value:gsub("%%entity", entity)
-    local fn, err = load(value)
+    chunk = chunk:gsub("%%entity", entity)
+    local fn, err = load(chunk)
 
     if not fn or err then
         return utility.error(("^1Error loading chunk for %s. Error message: %s^0"):format(shared.stateBagName, err))

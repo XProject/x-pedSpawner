@@ -152,6 +152,8 @@ function handler.create(pedModel, pedCoords, pedRadius, pedBucket, clientOnEnter
 
     pedPlayerRegistry[ped:getKey()] = class.new(lib.load("modules.registry"))
 
+    utility.queue(syncAllPedsWithPlayer)
+
     return ped
 end
 
@@ -181,6 +183,8 @@ function handler.remove(ped)
     table.wipe(pedPlayerRegistry[pedKey])
     pedPlayerRegistry[pedKey], registry = nil, nil ---@diagnostic disable-line: cast-local-type
 
+    utility.queue(syncAllPedsWithPlayer)
+
     return true
 end
 
@@ -204,6 +208,14 @@ handler.create(joaat("a_m_m_eastsa_01"), vector4(-789.4866, -2334.0007, 14.8078,
 
 RegisterCommand("bucket", function(source, args)
     SetPlayerRoutingBucket(source, tonumber(args[1]) --[[@as integer]])
+end, false)
+
+RegisterCommand("add", function(source, args)
+    local playerPed = GetPlayerPed(source)
+    local playerCoords = GetEntityCoords(playerPed)
+    local playerHeading = GetEntityHeading(playerPed)
+
+    handler.create(joaat("a_m_m_eastsa_01"), vector4(playerCoords.x, playerCoords.y, playerCoords.z, playerHeading), 10.0, GetPlayerRoutingBucket(source), clientScript)
 end, false)
 
 return handler
