@@ -157,6 +157,11 @@ AddEventHandler("onResourceStop", function(resource)
         for i = count, 1, -1 do
             pedRegistry:removeElementByIndex(indicesToRemove[i])
         end
+
+        -- sync the changes with client
+        if count > 0 then
+            utility.queue(syncAllPedsWithPlayer)
+        end
     end
 end)
 
