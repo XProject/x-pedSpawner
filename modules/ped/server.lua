@@ -6,6 +6,7 @@
 ---@field private entityId               number
 ---@field private networkId              number
 ---@field private bucket                 number
+---@field private resource               string
 ---@field private clientOnEnterScript?   string
 ---@field public  getKey                 fun(this: CPed): key: string
 ---@field public  getModel               fun(this: CPed): model: string
@@ -22,14 +23,17 @@
 ---@field public  getDistanceToPlayer    fun(this: CPed, playerId: number): number
 ---@field public  isPlayerInRadius       fun(this: CPed, playerId: number, flexUnits?: number): boolean
 ---@field public  deleteEntity           fun(this: CPed)
----@field public  getClientOnEnterScript fun(this: CPed)
+---@field public  getResource            fun(this: CPed): string
+---@field public  getClientOnEnterScript fun(this: CPed): string?
 
-local class   = lib.require("modules.class") --[[@as class]]
-local utility = lib.require("modules.utility") --[[@as svUtility]]
+local class      = lib.require("modules.class") --[[@as class]]
+local utility    = lib.require("modules.utility") --[[@as svUtility]]
+
+local MAX_RADIUS = 300.0
 
 local Ped
 ---@class Ped: CPed
-Ped           = class("Ped", nil, {
+Ped              = class("Ped", nil, {
     members = {
         --[[ private attributes ]]
         key                 = { private = true, value = false },
@@ -39,6 +43,7 @@ Ped           = class("Ped", nil, {
         entityId            = { private = true, value = false },
         networkId           = { private = true, value = false },
         bucket              = { private = true, value = false },
+        resource            = { private = true, value = false },
         clientOnEnterScript = { private = true, value = false },
 
         --[[ getters and setters ]]
@@ -91,8 +96,8 @@ Ped           = class("Ped", nil, {
 
                 if newRadius <= 0.0 then
                     return error(("newRadius must be bigger than 0.0, received %s"):format(newRadius))
-                elseif newRadius > 300.0 then
-                    newRadius = 300.0 -- because of onesync infinity entity scope
+                elseif newRadius > MAX_RADIUS then
+                    newRadius = MAX_RADIUS -- because of onesync infinity entity scope
                 end
 
                 this.radius = newRadius
@@ -190,6 +195,12 @@ Ped           = class("Ped", nil, {
             end
         },
 
+        getResource            = {
+            method = function(this)
+                return this.resource
+            end
+        },
+
         getClientOnEnterScript = {
             method = function(this)
                 return this.clientOnEnterScript
@@ -201,7 +212,7 @@ Ped           = class("Ped", nil, {
         -- overrides tostring
         __tostring = {
             method = function(this)
-                return string.format("[PED] Key: %s, Model: %s, Coords: %s, Radius: %s, EntityId: %s, NetworkId: %s, Bucket: %s", this.key, this.model, this.coords, this.radius, this.entityId, this.networkId, this.bucket)
+                return string.format("[PED] Key: %s, Model: %s, Coords: %s, Radius: %s, EntityId: %s, NetworkId: %s, Bucket: %s, Resource: %s", this.key, this.model, this.coords, this.radius, this.entityId, this.networkId, this.bucket, this.resource)
             end
         },
 
@@ -216,8 +227,9 @@ Ped           = class("Ped", nil, {
         this.key                 = utility.randomString(5)
         this.model               = model
         this.coords              = coords
-        this.radius              = radius
+        this.radius              = radius > MAX_RADIUS and MAX_RADIUS or radius
         this.bucket              = type(bucket) == "number" and bucket or 0 -- defaults to bucket 0
+        this.resource            = GetInvokingResource() or cache.resource
         this.clientOnEnterScript = type(clientOnEnterScript) == "string" and clientOnEnterScript or false
     end
 })

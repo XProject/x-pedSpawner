@@ -4,7 +4,7 @@ lua54 "yes"
 game "gta5"
 
 name "x-pedSpawner"
-version "0.0.0"
+version "0.5.0"
 description "Project-X Ped Spawner"
 
 dependencies {
@@ -13,7 +13,6 @@ dependencies {
 
 shared_scripts {
     "@ox_lib/init.lua",
-    -- "shared/*.lua",
 }
 
 files {
